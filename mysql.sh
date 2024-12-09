@@ -33,30 +33,19 @@ VALIDATE(){
     fi 
 }
 
-USAGE(){
-    echo -e "$R USAGE:: $N sudo sh 16-redirectors.sh package1 package2 ..."
-    exit 1
-}
 
 echo "Script started executing at: $(date)" | tee -a &>>$LOG_FILE
 
 CHECK_ROOT
 
-if [ $# -eq 0 ]
-then
-    USAGE
-fi
+dnf install mysql-server -y
+VALIDATE $? "Installing MYSQL Server"
 
-#sh 15-loops.sh git mysql postfix nginx
-for package in $@ #$@ referes to all arguments passed to it
-do
-    dnf list installed $package &>>$LOG_FILE
-    if [ $? -ne 0 ]
-    then
-        echo "$package is not installed, going to install it.." | tee -a &>>$LOG_FILE
-        dnf install $package -y &>>$LOG_FILE
-        VALIDATE $? "installing $package"
-    else 
-        echo -e "$package is already $Y installed, nothing to do.." tee -a &>>$LOG_FILE
-    fi
-done
+systemctl enable mysqld
+VALIDATE $? "Enabled MySQL Server"
+
+systemctl start mysqld
+VALIDATE $? "Started MySQL Server"
+
+mysql_secure_installation --set-root-pass ExpenseApp@1
+VALIDATE $? "settingup the root password"
